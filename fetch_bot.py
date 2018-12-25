@@ -22,11 +22,11 @@ class Bot:
 		'https://spreadsheets.google.com/feeds',
         'https://www.googleapis.com/auth/drive',
     ]
-
+	creds = ServiceAccountCredentials.from_json_keyfile_name('fetch_sheet.json', scope)
+	client = gspread.authorize(creds)
 	def sheet(self):
-		creds = ServiceAccountCredentials.from_json_keyfile_name('fetch_sheet.json', self.scope)
-		client = gspread.authorize(creds)
-		s = client.open('fetch').sheet1
+
+		s = self.client.open('fetch').sheet1
 		self.sheet = s.get_all_records()
 		for dic in self.sheet:
 			self.all_key += '- '+ dic['key']+'\n'
@@ -38,14 +38,36 @@ class Bot:
 				m = "chúc mọi người một ngày làm việc vui vẻ và hiệu quả (flex)(flex) \n"
 				m += "xem các option: @Fetch_admin --help"
 				self.fetch_group.sendMsg(m)
-			if datetime.now().strftime("%H:%M:%S") == "10:00:01":
+			if datetime.now().strftime("%H:%M:%S") == "20:45:01":
 				for dic in self.sheet:
 					if dic['key'].find('đặt cơm') >= 0:
 						self.fetch_group.sendMsg(dic['answer'])
-			if datetime.now().strftime("%H:%M:%S") == "11:00:01":
-				f = open('lan_2.docx', encoding='utf-8')
-				a = f.read()
-				self.fetch_group.sendMsg(a)
+			if datetime.now().strftime("%H:%M:%S") == "21:41:01":
+				sheet_order = self.client.open('Order cơm trưa').sheet1
+				s = {}
+				p = {}
+				# print(sheet.get_all_records())
+				for dic in sheet_order.get_all_records()[1:]:
+					# print(dic['Các món khác'])
+					if dic['Các món khác'] != '':
+						if dic['Các món khác'] in s:
+							s[dic['Các món khác']] += dic['Tên'] + ', '
+						else:
+							s.update({dic['Các món khác']: dic['Tên']+', '})
+					if dic['Loại'] != '':
+						if dic['Loại'] in p:
+							p[dic['Các món khác']] += dic['Tên'] + ', '
+						else:
+							p.update({dic['Loại']: dic['Tên']+', '})
+				msg = 'fetch_admin xác nhận: \n'
+				for key in s:
+					msg += key + ': ' + s[key]+'\n'
+				for key in p:
+					msg += key + ': ' + p[key]+'\n'
+				for dic in self.sheet:
+					if dic['key'].find('link order cơm') >= 0:
+						msg += dic['answer']
+				self.fetch_group.sendMsg(msg)
 			if datetime.now().strftime("%H:%M:%S") == "11:58:01":
 				self.fetch_group.sendMsg('mọi người nghỉ tay đi ăn cơm đi ạ (sun)(sun)')
 			time.sleep(1)
