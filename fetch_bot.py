@@ -24,25 +24,31 @@ class Bot:
     ]
 	creds = ServiceAccountCredentials.from_json_keyfile_name('fetch_sheet.json', scope)
 	client = gspread.authorize(creds)
-	def sheet(self):
 
-		s = self.client.open('fetch').sheet1
-		self.sheet = s.get_all_records()
+	def sheet(self):
+		while True:
+			s = self.client.open('fetch').sheet1
+			self.sheet = s.get_all_records()
+			time.sleep(10)
+
+	def all_key(self):
+		keys = ''
 		for dic in self.sheet:
-			self.all_key += '- '+ dic['key']+'\n'
+			keys += '- '+ dic['key']+'\n'
+		return keys
 
 	def notify(self):
 		while True:
-			if datetime.now().strftime("%H:%M:%S") == "19:11:01":
+			if datetime.now().strftime("%H:%M:%S") == "09:00:01":
 				print('true')
 				m = "chúc mọi người một ngày làm việc vui vẻ và hiệu quả (flex)(flex) \n"
 				m += "xem các option: @Fetch_admin --help"
 				self.fetch_group.sendMsg(m)
-			if datetime.now().strftime("%H:%M:%S") == "20:45:01":
+			if datetime.now().strftime("%H:%M:%S") == "10:00:01":
 				for dic in self.sheet:
 					if dic['key'].find('đặt cơm') >= 0:
 						self.fetch_group.sendMsg(dic['answer'])
-			if datetime.now().strftime("%H:%M:%S") == "21:41:01":
+			if datetime.now().strftime("%H:%M:%S") == "10:50:01":
 				sheet_order = self.client.open('Order cơm trưa').sheet1
 				s = {}
 				p = {}
@@ -94,14 +100,16 @@ class Bot:
 								if mess.find(dic['key']) >= 0:
 									self.fetch_group.sendMsg(dic['answer'])
 							if mess.find('--help') >= 0:
-								msg = 'dưới đây là những option: \n'+self.all_key
+								msg = 'dưới đây là những option: \n'+self.all_key()
 								self.fetch_group.sendMsg(msg)
 			time.sleep(0.1)
 
 bot = Bot()
-bot.sheet()
+# bot.sheet()
 t1 = threading.Thread(target=bot.notify)
 t2 = threading.Thread(target=bot.msg)
+t3 = threading.Thread(target=bot.sheet)
+t3.start()
 t1.start()
 t2.start()
 
