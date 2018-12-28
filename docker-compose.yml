@@ -8,4 +8,3 @@ services:
       - ./:/bot/
     stdin_open: true
     tty: true
-    image: bot
