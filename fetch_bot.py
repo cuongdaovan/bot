@@ -4,17 +4,21 @@ import time
 from threading import Thread
 import threading
 import random
+import os
+from collections import deque
 
 from skpy import Skype, SkypeChats
-from skpy import SkypeContact, SkypeAuthException
+from skpy import SkypeContact, SkypeAuthException, SkypeApiException
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from pprint import pformat
+import icu
 
 
 class Bot:
     print('run')
-    fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
-    # fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
+    # fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
+    fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
     # fetch_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"
     error_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"  # error
     option = 1000
@@ -32,26 +36,20 @@ class Bot:
         self.client = None
         self.list_order = None
         self.connect()
-        self.refresh()
 
     def connect(self):
         try:
             # self.fetch_admin = Skype(
             #     'cuongdaovan262@gmail.com', 'developer26297@')
-            self.fetch_admin = Skype(
-                'cuongdaovan262@gmail.com',
-                'developer26297@',
-                tokenFile='token.txt',
-                connect=True
-            )  # skype account
-            self.fetch_admin.conn.setTokenFile('token.txt')
+            # f = open('token.txt', 'a')
+            # f.write(' ')
+            self.fetch_admin = Skype('cuongdaovan262@gmail.com', 'developer26297@', tokenFile='token.txt')  # skype account
             self.fetch_group = self.fetch_admin.chats[self.fetch_id]
-            # group error
             self.fetch_error = self.fetch_admin.chats[self.error_id]
-        except Exception:
-            self.sendMsg(self.fetch_error, msg='connect error',
-                         rich=False, typing=True)
-
+        except (SkypeApiException, SkypeAuthException):
+            self.refreshToken()
+            self.fetch_group = self.fetch_admin.chats[self.fetch_id]
+            self.fetch_error = self.fetch_admin.chats[self.error_id]
     def sheet_update(self):
         """
         doc sheet lien tuc
@@ -84,6 +82,32 @@ class Bot:
             return True
         else:
             return False
+    
+    def updateSheetOrder(self):
+        while True:
+            try:
+                users = []
+                for user in self.fetch_group.users:
+                    users.append(str(user.name))
+                sheet = self.client.open('Order cơm trưa').sheet1
+                collator = icu.Collator.createInstance(icu.Locale('de_DE.UTF-8'))
+                users.sort(key=collator.getSortKey)
+                print(users)
+                cell_list = sheet.range('B3:B'+str(len(users)+2))
+                usr = deque(users)
+                try:
+                    for cell in cell_list:
+                        if usr != []:
+                            cell.value = str(usr.popleft())
+                        else:
+                            cell.value = ''
+                except IndexError as e:
+                    print('IndexError')
+                # Update in batch
+                sheet.update_cells(cell_list)
+                time.sleep(1000)
+            except Exception as e:
+                self.sendMsg(self.fetch_group, msg='update order error: '+e, rich=False, typing=False)
 
     def update_order(self):
         sheet_order = self.client.open('Order cơm trưa').sheet1
@@ -142,11 +166,11 @@ class Bot:
         self.list_order = result
 
     def order(self, msg, user=''):
-        if msg.lower().startswith('-order -rice'):
+        if msg.lower().find(',') >= 0:
             check = True
             sheet_order = self.client.open('Order cơm trưa').sheet1
             try:
-                ms = msg[len('-order -rice'):]
+                ms = msg[len('-order'):]
                 order_rice = ms.split(',')
                 order_rice = [str(i).lstrip(' ').rstrip(' ') for i in order_rice]
                 v = self.list_order['rice']['vegetables']
@@ -166,7 +190,6 @@ class Bot:
                     cost = '30'
                     print('cost error')
                 rice = random.choice(r)
-                
                 if vegetable == '':
                     check = False
                 if rice == '':
@@ -181,10 +204,10 @@ class Bot:
                     sheet_order.update_acell('H'+str(cell.row), 'Chưa Thanh toán')
             except ValueError as e:
                 self.sendMsg(self.fetch_error, msg='order error: ' + e, rich=False, typing=True)
-        if msg.lower().startswith('-order -other'):
+        else:
             try:
                 result = self.list_order['other'].keys()
-                ms = msg[len('-order -other'):]
+                ms = msg[len('-order'):]
                 order = ms.split(' ')
                 for i in order:
                     result = [s for s in result if i.lower() in s.lower()]
@@ -198,22 +221,16 @@ class Bot:
                     sheet_order.update_acell('F'+str(cell.row), other)
                     sheet_order.update_acell('G'+str(cell.row), self.list_order['other'][other])
                     sheet_order.update_acell('H'+str(cell.row), 'Chưa Thanh toán')
+                else:
+                    pass
             except Exception as e:
                 self.sendMsg(self.fetch_error, msg='order other error: '+e, rich=False, typing=True)
-    
-    def refresh(self):
-        self.fetch_admin.conn.refreshSkypeToken()
-        self.fetch_admin.conn.writeToken()
-        self.fetch_admin.conn.setTokenFile('token.txt')
 
     def refreshToken(self):
-        while True:
-            try:
-                self.refresh()
-                print(self.fetch_admin.conn.tokenExpiry)
-            except SkypeAuthException as e:
-                pass
-            time.sleep(100)
+        f = open('token.txt','a')
+        f.write(' ')
+        self.fetch_admin = Skype('cuongdaovan262@gmail.com', 'developer26297@', tokenFile='token.txt')
+        print(self.fetch_admin.conn.connected)
 
     def notify(self):
         """
@@ -225,26 +242,26 @@ class Bot:
                 now = datetime.now()
                 days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
                 if now.strftime("%A").lower() in days:
-                    if self.check_time(datetime.now().strftime("%H:%M:%S"), "09:00:01"):
+                    if self.check_time(datetime.now().strftime("%H:%M"), "09:09"):
                         msg = 'chúc <at id="*">all</at> một ngày làm việc vui vẻ và hiệu quả\n'
-                        msg += "xem các option: -admin --help"
+                        msg += "xem các option: -admin -help"
                         self.sendMsg(self.fetch_group, msg=msg,
                                      rich=True, typing=True)
-                        time.sleep(1)
-                    if self.check_time(datetime.now().strftime("%H:%M:%S"), "10:00:05"):
+                        time.sleep(100)
+                    if self.check_time(datetime.now().strftime("%H:%M"), "10:00"):
                         for dic in self.sheet:
                             if dic['key'].find('đặt cơm') >= 0:
                                 self.sendMsg(
                                     self.fetch_group, msg=dic['answer'], rich=True, typing=True)
-                        time.sleep(1)
-                    if self.check_time(datetime.now().strftime("%H:%M:%S"), "10:45:01"):
+                        time.sleep(100)
+                    if self.check_time(datetime.now().strftime("%H:%M"), "10:45"):
                         self.update_order()
-                        time.sleep(1)
-                    if self.check_time(datetime.now().strftime("%H:%M:%S"), "11:58:01"):
+                        time.sleep(100)
+                    if self.check_time(datetime.now().strftime("%H:%M"), "11:58"):
                         msg = "mọi người nghỉ tay đi ăn cơm đi ạ (sun)(sun)"
                         self.sendMsg(self.fetch_group, msg=msg,
                                      rich=False, typing=True)
-                        time.sleep(1)
+                        time.sleep(100)
                     if self.check_time(datetime.now().strftime("%H:%M"), "17:00"):
                         worksheet = self.client.open('Order cơm trưa').sheet1
                         cell_list = worksheet.range('C3:H200')
@@ -253,8 +270,10 @@ class Bot:
                         worksheet.update_cells(cell_list)
                         time.sleep(60)
                     time.sleep(0.5)
-            except Exception:
-                self.sendMsg(self.fetch_error, msg='error notify',
+            except (SkypeAuthException, SkypeApiException):
+                self.refreshToken()
+            except Exception as e:
+                self.sendMsg(self.fetch_error, msg='error notify'+str(e),
                              rich=False, typing=True)
 
     def msg(self):
@@ -292,7 +311,7 @@ class Bot:
                                             if mess.lower().find(dic['key'].lower().strip('\n')) >= 0:
                                                 self.fetch_group.sendMsg(
                                                     dic['answer'], rich=True)
-                                        if mess.find('--help') >= 0:
+                                        if mess.find('-help') >= 0:
                                             msg = 'dưới đây là những option: \n'
                                             for key in self.all_key()[0:]:
                                                 msg += str(self.all_key().index(key) +
@@ -318,6 +337,8 @@ class Bot:
                                         self.order(content, str(msg.user.name))
                     events = []
                 time.sleep(0.5)
+            except (SkypeAuthException, SkypeApiException):
+                self.refreshToken()
             except Exception as e:
                 self.sendMsg(self.fetch_error, msg='msg error: ' + str(e),
                              rich=False, typing=False)
@@ -327,9 +348,8 @@ bot = Bot()
 t1 = threading.Thread(target=bot.sheet_update)
 t2 = threading.Thread(target=bot.notify)
 t3 = threading.Thread(target=bot.msg)
-t = threading.Thread(target=bot.refreshToken)
-
-t.start()
+# t4 = threading.Thread(target=bot.updateSheetOrder)
 t1.start()
 t2.start()
 t3.start()
+# t4.start()
