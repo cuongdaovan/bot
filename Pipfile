@@ -8,6 +8,8 @@ gspread = "*"
 "oauth2client" = "*"
 skpy = "*"
 pyopenssl = "*"
+pprint = "*"
+pyicu = "*"
 
 [dev-packages]
 
