@@ -13,6 +13,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from pprint import pformat
 import icu
+from google.auth.transport.requests import Request
 
 
 class Bot:
@@ -39,6 +40,9 @@ class Bot:
         self.dishes = ''
         self.q_a = None
         self.winner = []
+        self.creds = ServiceAccountCredentials.from_json_keyfile_name(
+                    'fetch_sheet.json', self.scope)
+        self.client = gspread.authorize(self.creds)
         self.connect()
 
     def connect(self):
@@ -46,25 +50,28 @@ class Bot:
             self.fetch_admin.conn.readToken()
         except SkypeAuthException:
             self.fetch_admin.conn.setUserPwd('cuongdaovan262@gmail.com', 'developer26297@')
-            self.fetch_admin.conn.getSkypeToken()
-            self.fetch_admin.conn.writeToken()
+            # self.fetch_admin.conn.getSkypeToken()
+            # self.fetch_admin.conn.writeToken()
         self.fetch_group = self.fetch_admin.chats[self.fetch_id]
         self.fetch_error = self.fetch_admin.chats[self.error_id]
+
     def sheet_update(self):
         """
         doc sheet lien tuc
         # need_to_do
         """
         while True:
-            self.creds = ServiceAccountCredentials.from_json_keyfile_name(
-                'fetch_sheet.json', self.scope)
-            self.client = gspread.authorize(self.creds)
-            s = self.client.open('fetch').sheet1
-            self.sheet = s.get_all_records()
-            self.list_dish()
-            self.question_answer()
-            time.sleep(3600)
-
+            try:
+                s = self.client.open('fetch').sheet1
+                self.sheet = s.get_all_records()
+                self.list_dish()
+                self.question_answer()
+                time.sleep(60)
+            except gspread.exceptions.GSpreadException as e:
+                self.client.auth.refresh(Request())                
+            except Exception as e:
+                self.sendMsg(self.fetch_error, msg='sheet update error: '+ str(e))
+         
     def all_key(self):
         """
         get all key of key-answer onto array
@@ -242,7 +249,9 @@ class Bot:
                 self.sendMsg(self.fetch_error, msg='order other error: '+e, rich=False, typing=True)
 
     def refreshToken(self):
-        self.connect()
+        self.fetch_admin.conn.setUserPwd('cuongdaovan262@gmail.com', 'developer26297@')
+        self.fetch_group = self.fetch_admin.chats[self.fetch_id]
+        self.fetch_error = self.fetch_admin.chats[self.error_id]
 
     def notify(self):
         """
@@ -251,7 +260,7 @@ class Bot:
         """
         while True:
             try:
-                self.refreshToken()
+                
                 now = datetime.now()
                 days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
                 if now.strftime("%A").lower() in days:
@@ -267,7 +276,7 @@ class Bot:
                                 self.sendMsg(
                                     self.fetch_group, msg=dic['answer'], rich=True, typing=True)
                         time.sleep(100)
-                    if self.check_time(datetime.now().strftime("%H:%M"), "09:45"):
+                    if self.check_time(datetime.now().strftime("%H:%M"), "10:00"):
                         self.update_order()
                         time.sleep(100)
                     if self.check_time(datetime.now().strftime("%H:%M"), "10:45"):
@@ -311,17 +320,19 @@ class Bot:
                     #     self.sendMsg(self.fetch_group, msg=msg)
                     #     time.sleep(60)
                     time.sleep(0.5)
+            except SkypeAuthException as e:
+                self.refreshToken()
             except SkypeApiException as e:
                 self.sendMsg(self.fetch_error, msg='error notify'+str(e), rich=False, typing=False)
             except Exception as e:
                 print('error')
-                # self.sendMsg(self.fetch_error, msg='error notify'+str(e),
-                #              rich=False, typing=True)
+                self.sendMsg(self.fetch_error, msg='error notify'+str(e),
+                             rich=False, typing=True)
 
     def msg(self):
         while True:
             try:
-                self.refreshToken()
+                # self.refreshToken()
                 events = self.fetch_admin.getEvents()  # get tất cả các event trên skype
                 if events != []:
                     event = events[0]
@@ -384,6 +395,8 @@ class Bot:
                                     #         print('chính xác')
                     events = []
                 time.sleep(0.5)
+            except SkypeAuthException as e:
+                self.refreshToken()
             except SkypeApiException as e:
                 self.sendMsg(self.fetch_error, msg='msg error'+str(e), rich=False, typing=False)
             except Exception as e:
