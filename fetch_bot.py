@@ -52,6 +52,7 @@ class Bot:
             self.fetch_admin.conn.setUserPwd('cuongdaovan262@gmail.com', 'developer26297@')
             # self.fetch_admin.conn.getSkypeToken()
             # self.fetch_admin.conn.writeToken()
+        print(self.fetch_admin)
         self.fetch_group = self.fetch_admin.chats[self.fetch_id]
         self.fetch_error = self.fetch_admin.chats[self.error_id]
 
@@ -60,17 +61,16 @@ class Bot:
         doc sheet lien tuc
         # need_to_do
         """
-        while True:
-            try:
-                s = self.client.open('fetch').sheet1
-                self.sheet = s.get_all_records()
-                self.list_dish()
-                self.question_answer()
-                time.sleep(60)
-            except gspread.exceptions.GSpreadException as e:
-                self.client.auth.refresh(Request())                
-            except Exception as e:
-                self.sendMsg(self.fetch_error, msg='sheet update error: '+ str(e))
+
+        try:
+            s = self.client.open('fetch').sheet1
+            self.sheet = s.get_all_records()
+            self.list_dish()
+            self.question_answer()
+        except gspread.exceptions.GSpreadException as e:
+            self.client.auth.refresh(Request())                
+        except Exception as e:
+            self.sendMsg(self.fetch_error, msg='sheet update error: '+ str(e))
          
     def all_key(self):
         """
@@ -105,20 +105,19 @@ class Bot:
             collator = icu.Collator.createInstance(icu.Locale('de_DE.UTF-8'))
             users.sort(key=collator.getSortKey)
             print(users)
-            cell_list = sheet.range('B3:B'+str(len(users)+2))
+            cell_list = sheet.range('B3:B'+str(len(users)+100))
             usr = deque(users)
             try:
                 for cell in cell_list:
-                    if usr != []:
+                    cell.value = ''
+                    if usr != deque([]):
                         cell.value = str(usr.popleft())
-                    else:
-                        cell.value = ''
             except IndexError as e:
                 print('IndexError')
             # Update in batch
             sheet.update_cells(cell_list)
         except Exception as e:
-            self.sendMsg(self.fetch_group, msg='update order error: '+e, rich=False, typing=False)
+            self.sendMsg(self.fetch_error, msg='update order error: '+e, rich=False, typing=False)
 
     def update_order(self):
         sheet_order = self.client.open('Order cơm trưa').sheet1
@@ -226,13 +225,21 @@ class Bot:
         else:
             try:
                 result = self.list_order['other'].keys()
+                note = ''
                 ms = msg[len('-order'):]
+                if ms.find('|') >= 0:
+                    #do something
+                    note = ms[ms.index('|') + 1: len(ms)]
+                    ms = ms[0 : ms.index('|')]
+                    print(ms)
                 order = ms.split(' ')           
                 for i in order:
                     result = [s for s in result if i.lower() in s.lower()]
                 other = ''
                 if result != []:
                     other = random.choice(result)
+                print(other)
+                print(note)
                 if other != '':
                     sheet_order = self.client.open('Order cơm trưa').sheet1
                     cell = sheet_order.find(str(user.name))
@@ -242,6 +249,8 @@ class Bot:
                     sheet_order.update_acell('F'+str(cell.row), other)
                     sheet_order.update_acell('G'+str(cell.row), self.list_order['other'][other])
                     sheet_order.update_acell('H'+str(cell.row), 'Chưa thanh toán')
+                    sheet_order.update_acell('I'+str(cell.row), note)
+                    self.sendMsg(self.fetch_group,msg='(like)(like)(like)(like)(like)', rich=False, typing=True)
                 else:
                     ch = self.fetch_admin.contacts[user.id].chat
                     ch.sendMsg(error)
@@ -250,6 +259,7 @@ class Bot:
 
     def refreshToken(self):
         self.fetch_admin.conn.setUserPwd('cuongdaovan262@gmail.com', 'developer26297@')
+        self.fetch_admin.getSkypeToken()
         self.fetch_group = self.fetch_admin.chats[self.fetch_id]
         self.fetch_error = self.fetch_admin.chats[self.error_id]
 
@@ -258,8 +268,10 @@ class Bot:
         gui thong bao theo gio
         #need_to_do
         """
+        self.updateSheetOrder()
         while True:
             try:
+                # print("notify")
                 now = datetime.now()
                 days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
                 if now.strftime("%A").lower() in days:
@@ -275,10 +287,10 @@ class Bot:
                                 self.sendMsg(
                                     self.fetch_group, msg=dic['answer'], rich=True, typing=True)
                         time.sleep(100)
-                    if self.check_time(datetime.now().strftime("%H:%M"), "10:00"):
+                    if self.check_time(datetime.now().strftime("%H:%M"), "10:45"):
                         self.update_order()
                         time.sleep(100)
-                    if self.check_time(datetime.now().strftime("%H:%M"), "10:45"):
+                    if self.check_time(datetime.now().strftime("%H:%M"), "09:45"):
                         self.update_order()
                         time.sleep(100)
                     if self.check_time(datetime.now().strftime("%H:%M"), "11:58"):
@@ -294,9 +306,14 @@ class Bot:
                         worksheet.update_cells(cell_list)
                         self.updateSheetOrder()
                         time.sleep(60)
-                    if self.check_time(datetime.now().strftime("%H:%M"), "09:30"):
+                    if self.check_time(datetime.now().strftime("%H:%M"), "09:13"):
+                        worksheet = self.client.open('Order cơm trưa').sheet1
+                        cell_list = worksheet.range('C3:H200')
+                        for cell in cell_list:
+                            cell.value = ''
+                        worksheet.update_cells(cell_list)
                         self.updateSheetOrder()
-                        time.sleep(100)
+                        time.sleep(60)
                     # if self.check_time(datetime.now().strftime("%H:%M"), "16:32"):
                     #     msg = 'Hi <at id="*">all</at>, Xin thông báo, fetch_admin đưa ra mỗi ngày một câu hỏi để cho các ace giải trí\n'
                     #     msg += "Thể lệ cuộc thi là tìm ra ai là người trả lời câu hỏi đúng nhất chính xác nhất và nhanh nhất " 
@@ -318,7 +335,7 @@ class Bot:
                     #         msg += "không có ai chiến thắng" 
                     #     self.sendMsg(self.fetch_group, msg=msg)
                     #     time.sleep(60)
-                    time.sleep(0.5)
+                time.sleep(20)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
@@ -330,6 +347,7 @@ class Bot:
 
     def msg(self):
         while True:
+            # print("msg")
             try:
                 events = self.fetch_admin.getEvents()  # get tất cả các event trên skype
                 if events != []:
@@ -341,6 +359,7 @@ class Bot:
                             if msg.chat.id == self.fetch_id:
                                 if content != None:
                                     # kiểm tra xem có mark @Fetch_admin không
+                                    print(content)
                                     if content.startswith('-admin'):
                                         # cut take msg
                                         mess = content[len(
@@ -392,7 +411,7 @@ class Bot:
                                     #         self.winner.append(str(msg.user.name))
                                     #         print('chính xác')
                     events = []
-                time.sleep(0.5)
+                time.sleep(0.2)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
@@ -403,8 +422,8 @@ class Bot:
 
 bot = Bot()
 t1 = threading.Thread(target=bot.sheet_update)
-t2 = threading.Thread(target=bot.notify)
-t3 = threading.Thread(target=bot.msg)
+t2 = threading.Thread(target=bot.msg)
+t3 = threading.Thread(target=bot.notify)
 t1.start()
 t2.start()
 t3.start()
