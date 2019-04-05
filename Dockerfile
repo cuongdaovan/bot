@@ -11,4 +11,4 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN pip install -U pipenv
 RUN pipenv install --system
 
-CMD ["python", "fetch_bot.py"]
+# CMD ["python", "fetch_bot.py"]

@@ -275,7 +275,7 @@ class Bot:
                 now = datetime.now()
                 days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
                 if now.strftime("%A").lower() in days:
-                    if self.check_time(datetime.now().strftime("%H:%M"), "09:00"):
+                    if self.check_time(datetime.now().strftime("%H:%M"), "22:35"):
                         msg = 'chúc <at id="*">all</at> một ngày làm việc vui vẻ và hiệu quả\n'
                         msg += "xem các option: -admin -help"
                         self.sendMsg(self.fetch_group, msg=msg,
@@ -335,7 +335,7 @@ class Bot:
                     #         msg += "không có ai chiến thắng" 
                     #     self.sendMsg(self.fetch_group, msg=msg)
                     #     time.sleep(60)
-                time.sleep(10)
+                # time.sleep(10)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
@@ -422,8 +422,8 @@ class Bot:
 
 bot = Bot()
 t1 = threading.Thread(target=bot.sheet_update)
-t2 = threading.Thread(target=bot.msg)
-# t3 = threading.Thread(target=bot.notify)
+# t2 = threading.Thread(target=bot.msg)
+t3 = threading.Thread(target=bot.notify)
 t1.start()
-t2.start()
-# t3.start()
+# t2.start()
+t3.start()
