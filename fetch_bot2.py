@@ -47,7 +47,8 @@ class Bot:
 
     def connect(self):
         try:
-            self.fetch_admin.conn.readToken()
+            # self.fetch_admin.conn.readToken()
+            self.fetch_admin = Skype('cuongdaovan262@gmail.com', 'developer26297@')
         except SkypeAuthException:
             self.fetch_admin.conn.setUserPwd('cuongdaovan262@gmail.com', 'developer26297@')
             self.fetch_admin.conn.getSkypeToken()
