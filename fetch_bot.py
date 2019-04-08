@@ -18,8 +18,8 @@ from google.auth.transport.requests import Request
 
 class Bot:
     print('run')
-    # fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
-    fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
+    fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
+    # fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
     # fetch_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"
     error_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"  # error
     option = 1000
@@ -411,7 +411,7 @@ class Bot:
                                     #         self.winner.append(str(msg.user.name))
                                     #         print('chính xác')
                     events = []
-                # time.sleep(0.2)
+                time.sleep(0.2)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
