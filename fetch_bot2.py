@@ -29,7 +29,7 @@ class Bot:
     ]
 
     def __init__(self):
-        self.fetch_admin = None
+        self.fetch_admin = Skype('cuongdaovan262@gmail.com', 'developer26297@', tokenFile='.tokens')
         self.fetch_group = None
         self.fetch_error = None
         self.sheet = None  # get data from sheet
