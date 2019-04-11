@@ -272,7 +272,7 @@ class Bot:
         self.updateSheetOrder()
         while True:
             try:
-                # print("notify")
+                print("notify")
                 now = datetime.now()
                 days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
                 if now.strftime("%A").lower() in days:
@@ -336,7 +336,7 @@ class Bot:
                     #         msg += "không có ai chiến thắng" 
                     #     self.sendMsg(self.fetch_group, msg=msg)
                     #     time.sleep(60)
-                time.sleep(5)
+                time.sleep(1)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:

@@ -30,7 +30,7 @@ class Bot:
 
     def __init__(self):
         self.fetch_admin = Skype(connect=False)
-        self.fetch_admin.conn.setTokenFile('token.txt')
+        self.fetch_admin.conn.setTokenFile('.tokens')
         self.fetch_group = None
         self.fetch_error = None
         self.sheet = None  # get data from sheet
@@ -280,24 +280,24 @@ class Bot:
                         msg += "xem các option: -admin -help"
                         self.sendMsg(self.fetch_group, msg=msg,
                                      rich=True, typing=True)
-                        time.sleep(100)
+                        time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "09:15"):
                         for dic in self.sheet:
                             if dic['key'].find('đặt cơm') >= 0:
                                 self.sendMsg(
                                     self.fetch_group, msg=dic['answer'], rich=True, typing=True)
-                        time.sleep(100)
+                        time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "10:45"):
                         self.update_order()
-                        time.sleep(100)
+                        time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "09:45"):
                         self.update_order()
-                        time.sleep(100)
+                        time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "11:58"):
                         msg = "mọi người nghỉ tay đi ăn cơm đi ạ (sun)(sun)"
                         self.sendMsg(self.fetch_group, msg=msg,
                                      rich=False, typing=True)
-                        time.sleep(100)
+                        time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "17:00"):
                         worksheet = self.client.open('Order cơm trưa').sheet1
                         cell_list = worksheet.range('C3:H200')
@@ -347,7 +347,7 @@ class Bot:
 
     def msg(self):
         while True:
-            # print("msg")
+            print("msg")
             try:
                 events = self.fetch_admin.getEvents()  # get tất cả các event trên skype
                 if events != []:
@@ -411,7 +411,7 @@ class Bot:
                                     #         self.winner.append(str(msg.user.name))
                                     #         print('chính xác')
                     events = []
-                time.sleep(0.2)
+                time.sleep(0.5)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
@@ -421,9 +421,10 @@ class Bot:
                              rich=False, typing=False)
 
 bot = Bot()
-t1 = threading.Thread(target=bot.sheet_update)
+# t1 = threading.Thread(target=bot.sheet_update)
+bot.sheet_update()
 t2 = threading.Thread(target=bot.msg)
 # t3 = threading.Thread(target=bot.notify)
-t1.start()
+# t1.start()
 t2.start()
 # t3.start()
