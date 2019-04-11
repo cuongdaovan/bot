@@ -29,8 +29,7 @@ class Bot:
     ]
 
     def __init__(self):
-        self.fetch_admin = Skype(connect=False)
-        self.fetch_admin.conn.setTokenFile('.tokens')
+        self.fetch_admin = Skype('cuongdaovan262@gmail.com', 'developer26297@', tokenFile='.tokens')
         self.fetch_group = None
         self.fetch_error = None
         self.sheet = None  # get data from sheet
@@ -260,6 +259,7 @@ class Bot:
     def refreshToken(self):
         self.fetch_admin.conn.setUserPwd('cuongdaovan262@gmail.com', 'developer26297@')
         self.fetch_admin.getSkypeToken()
+        self.fetch_admin.conn.writeToken()
         self.fetch_group = self.fetch_admin.chats[self.fetch_id]
         self.fetch_error = self.fetch_admin.chats[self.error_id]
 
