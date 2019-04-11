@@ -18,8 +18,8 @@ from google.auth.transport.requests import Request
 
 class Bot:
     print('run')
-    fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
-    # fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
+    # fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
+    fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
     # fetch_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"
     error_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"  # error
     option = 1000
@@ -271,7 +271,7 @@ class Bot:
         self.updateSheetOrder()
         while True:
             try:
-                # print("notify")
+                print("notify")
                 now = datetime.now()
                 days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
                 if now.strftime("%A").lower() in days:
@@ -335,7 +335,7 @@ class Bot:
                     #         msg += "không có ai chiến thắng" 
                     #     self.sendMsg(self.fetch_group, msg=msg)
                     #     time.sleep(60)
-                time.sleep(10)
+                time.sleep(50)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
@@ -421,10 +421,8 @@ class Bot:
                              rich=False, typing=False)
 
 bot = Bot()
-# t1 = threading.Thread(target=bot.sheet_update)
 bot.sheet_update()
 t2 = threading.Thread(target=bot.msg)
-# t3 = threading.Thread(target=bot.notify)
-# t1.start()
+t3 = threading.Thread(target=bot.notify)
 t2.start()
-# t3.start()
+t3.start()

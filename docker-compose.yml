@@ -9,12 +9,12 @@ services:
     stdin_open: true
     tty: true
     command: python fetch_bot.py
-  bot2:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - ./:/bot/
-    stdin_open: true
-    tty: true
-    command: python fetch_bot2.py
+  # bot2:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - ./:/bot/
+  #   stdin_open: true
+  #   tty: true
+  #   command: python fetch_bot2.py
