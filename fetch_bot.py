@@ -423,6 +423,6 @@ class Bot:
 bot = Bot()
 bot.sheet_update()
 t2 = threading.Thread(target=bot.msg)
-t3 = threading.Thread(target=bot.notify)
+# t3 = threading.Thread(target=bot.notify)
 t2.start()
-t3.start()
+# t3.start()
