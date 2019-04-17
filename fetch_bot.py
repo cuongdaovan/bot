@@ -18,8 +18,8 @@ from google.auth.transport.requests import Request
 
 class Bot:
     print('run')
-    fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
-    # fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
+    # fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
+    fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
     # fetch_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"
     error_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"  # error
     option = 1000
@@ -127,16 +127,16 @@ class Bot:
             kiem tra xem co mon trong dict chua 
             neu chua co thi them vao dict, neu co roi thi cap nhat dict
             """
-            if dic['Các món khác'] != '':
-                if dic['Các món khác'] in s:
-                    s[dic['Các món khác']] += dic['Tên'] + ', '
+            if dic['Món khác'] != '':
+                if dic['Món khác'] in s:
+                    s[dic['Món khác']] += dic['Tên'] + ', '
                 else:
-                    s.update({dic['Các món khác']: dic['Tên'] + ', '})
-            if dic['Loại'] != '':
-                if dic['Loại'] in p:
-                    p[dic['Loại']] += dic['Tên'] + ', '
+                    s.update({dic['Món khác']: dic['Tên'] + ', '})
+            if dic['Cơm suất'] != '':
+                if dic['Cơm suất'] in p:
+                    p[dic['Cơm suất']] += dic['Tên'] + ', '
                 else:
-                    p.update({dic['Loại']: dic['Tên'] + ', '})
+                    p.update({dic['Cơm suất']: dic['Tên'] + ', '})
         """
         gui thong tin dat com len group
         """
@@ -211,11 +211,11 @@ class Bot:
                 if check == True:
                     cell = sheet_order.find(str(user.name))
                     sheet_order.update_acell('C'+str(cell.row), str(rice))
-                    sheet_order.update_acell('D'+str(cell.row), str(vegetable))
-                    sheet_order.update_acell('E'+str(cell.row), 'Cơm hộp')
-                    sheet_order.update_acell('F'+str(cell.row), '')
-                    sheet_order.update_acell('G'+str(cell.row), cost)
-                    sheet_order.update_acell('H'+str(cell.row), 'Chưa thanh toán')
+                    # sheet_order.update_acell('D'+str(cell.row), str(vegetable))
+                    # sheet_order.update_acell('E'+str(cell.row), 'Cơm hộp')
+                    sheet_order.update_acell('D'+str(cell.row), '')
+                    # sheet_order.update_acell('G'+str(cell.row), cost)
+                    sheet_order.update_acell('E'+str(cell.row), 'Chưa thanh toán')
                 else:
                     ch = self.fetch_admin.contacts[user.id].chat
                     ch.sendMsg(error)
@@ -300,15 +300,15 @@ class Bot:
                         time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "17:00"):
                         worksheet = self.client.open('Order cơm trưa').sheet1
-                        cell_list = worksheet.range('C3:H200')
+                        cell_list = worksheet.range('C3:F200')
                         for cell in cell_list:
                             cell.value = ''
                         worksheet.update_cells(cell_list)
                         self.updateSheetOrder()
                         time.sleep(60)
-                    if self.check_time(datetime.now().strftime("%H:%M"), "09:13"):
+                    if self.check_time(datetime.now().strftime("%H:%M"), "09:10"):
                         worksheet = self.client.open('Order cơm trưa').sheet1
-                        cell_list = worksheet.range('C3:H200')
+                        cell_list = worksheet.range('C3:F200')
                         for cell in cell_list:
                             cell.value = ''
                         worksheet.update_cells(cell_list)
@@ -335,7 +335,7 @@ class Bot:
                     #         msg += "không có ai chiến thắng" 
                     #     self.sendMsg(self.fetch_group, msg=msg)
                     #     time.sleep(60)
-                time.sleep(50)
+                time.sleep(10)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
@@ -423,6 +423,6 @@ class Bot:
 bot = Bot()
 bot.sheet_update()
 t2 = threading.Thread(target=bot.msg)
-# t3 = threading.Thread(target=bot.notify)
+t3 = threading.Thread(target=bot.notify)
 t2.start()
-# t3.start()
+t3.start()
