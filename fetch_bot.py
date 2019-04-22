@@ -18,8 +18,8 @@ from google.auth.transport.requests import Request
 
 class Bot:
     print('run')
-    # fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
-    fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
+    fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
+    # fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
     # fetch_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"
     error_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"  # error
     option = 1000
@@ -60,7 +60,6 @@ class Bot:
         doc sheet lien tuc
         # need_to_do
         """
-
         try:
             s = self.client.open('fetch').sheet1
             self.sheet = s.get_all_records()
@@ -104,7 +103,7 @@ class Bot:
             collator = icu.Collator.createInstance(icu.Locale('de_DE.UTF-8'))
             users.sort(key=collator.getSortKey)
             print(users)
-            cell_list = sheet.range('B3:B'+str(len(users)+100))
+            cell_list = sheet.range('B2:B'+str(len(users)+100))
             usr = deque(users)
             try:
                 for cell in cell_list:
@@ -123,10 +122,6 @@ class Bot:
         s = {}  # dictionary of other order
         p = {}  # dictionary of rice order
         for dic in sheet_order.get_all_records()[1:]:
-            """
-            kiem tra xem co mon trong dict chua 
-            neu chua co thi them vao dict, neu co roi thi cap nhat dict
-            """
             if dic['Món khác'] != '':
                 if dic['Món khác'] in s:
                     s[dic['Món khác']] += dic['Tên'] + ', '
@@ -137,9 +132,6 @@ class Bot:
                     p[dic['Cơm suất']] += dic['Tên'] + ', '
                 else:
                     p.update({dic['Cơm suất']: dic['Tên'] + ', '})
-        """
-        gui thong tin dat com len group
-        """
         msg = '<at id="*">all</at> fetch_admin xác nhận: \n'
         for key in s:
             msg += str(key) + ': ' + str(s[key]) + '\n'
@@ -148,7 +140,7 @@ class Bot:
         for dic in self.sheet:
             if dic['key'].find('link order') >= 0:
                 msg += dic['answer']
-        self.sendMsg(self.fetch_group, msg=msg, rich=True, typing=True)
+        self.sendMsg(self.fetch_group, msg=msg, rich=True, typing=False)
 
     def list_dish(self):
         self.creds = ServiceAccountCredentials.from_json_keyfile_name(
@@ -268,10 +260,9 @@ class Bot:
         gui thong bao theo gio
         #need_to_do
         """
-        self.updateSheetOrder()
+        # self.updateSheetOrder()
         while True:
             try:
-                print("notify")
                 now = datetime.now()
                 days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
                 if now.strftime("%A").lower() in days:
@@ -335,7 +326,7 @@ class Bot:
                     #         msg += "không có ai chiến thắng" 
                     #     self.sendMsg(self.fetch_group, msg=msg)
                     #     time.sleep(60)
-                time.sleep(10)
+                time.sleep(5)
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
@@ -347,7 +338,6 @@ class Bot:
 
     def msg(self):
         while True:
-            print("msg")
             try:
                 events = self.fetch_admin.getEvents()  # get tất cả các event trên skype
                 if events != []:
@@ -411,18 +401,18 @@ class Bot:
                                     #         self.winner.append(str(msg.user.name))
                                     #         print('chính xác')
                     events = []
-                time.sleep(0.5)
+                time.sleep(1)
             except SkypeAuthException as e:
                 self.refreshToken()
-            except SkypeApiException as e:
-                self.sendMsg(self.fetch_error, msg='msg error'+str(e), rich=False, typing=False)
             except Exception as e:
                 self.sendMsg(self.fetch_error, msg='msg error: ' + str(e),
                              rich=False, typing=False)
 
 bot = Bot()
 bot.sheet_update()
+# t1 = threading.Thread(target=bot.sheet_update)
 t2 = threading.Thread(target=bot.msg)
 t3 = threading.Thread(target=bot.notify)
+# t1.start()
 t2.start()
 t3.start()
