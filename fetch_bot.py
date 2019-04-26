@@ -60,15 +60,17 @@ class Bot:
         doc sheet lien tuc
         # need_to_do
         """
-        try:
-            s = self.client.open('fetch').sheet1
-            self.sheet = s.get_all_records()
-            self.list_dish()
-            self.question_answer()
-        except gspread.exceptions.GSpreadException as e:
-            self.client.auth.refresh(Request())                
-        except Exception as e:
-            self.sendMsg(self.fetch_error, msg='sheet update error: '+ str(e))
+        while True:
+            try:
+                s = self.client.open('fetch').sheet1
+                self.sheet = s.get_all_records()
+                self.list_dish()
+                self.question_answer()
+                time.sleep(60)
+            except gspread.exceptions.GSpreadException as e:
+                self.client.auth.refresh(Request())                
+            except Exception as e:
+                self.sendMsg(self.fetch_error, msg='sheet update error: '+ str(e))
          
     def all_key(self):
         """
@@ -330,7 +332,7 @@ class Bot:
             except SkypeAuthException as e:
                 self.refreshToken()
             except SkypeApiException as e:
-                self.sendMsg(self.fetch_error, msg='error notify'+str(e), rich=False, typing=False)
+                self.sendMsg(self.fetch_error, msg='error skype'+str(e), rich=False, typing=False)
             except Exception as e:
                 print('error')
                 self.sendMsg(self.fetch_error, msg='error notify'+str(e),
@@ -409,10 +411,10 @@ class Bot:
                              rich=False, typing=False)
 
 bot = Bot()
-bot.sheet_update()
-# t1 = threading.Thread(target=bot.sheet_update)
+# bot.sheet_update()
+t1 = threading.Thread(target=bot.sheet_update)
 t2 = threading.Thread(target=bot.msg)
 t3 = threading.Thread(target=bot.notify)
-# t1.start()
+t1.start()
 t2.start()
 t3.start()
