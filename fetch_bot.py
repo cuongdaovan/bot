@@ -7,10 +7,11 @@ import random
 import os
 from collections import deque
 
-from skpy import Skype, SkypeChats
+from skpy import Skype, SkypeChats, SkypeCardMsg
 from skpy import SkypeContact, SkypeAuthException, SkypeApiException
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import httplib2
 from pprint import pformat
 import icu
 from google.auth.transport.requests import Request
@@ -44,6 +45,14 @@ class Bot:
         self.client = gspread.authorize(self.creds)
         self.connect()
 
+    def makeCard(self, title, body, keys):
+        buttons = []
+        for key in keys:
+            button = SkypeCardMsg.Button(title=key,type="imBack", value="-admin "+key)
+            buttons.append(button)
+        msg = SkypeCardMsg(title=title, body=body, buttons=buttons)
+        return msg
+
     def connect(self):
         try:
             self.fetch_admin.conn.readToken()
@@ -66,12 +75,13 @@ class Bot:
                 self.sheet = s.get_all_records()
                 self.list_dish()
                 self.question_answer()
-                time.sleep(60)
-            except gspread.exceptions.GSpreadException as e:
-                self.client.auth.refresh(Request())                
+                http = self.creds.authorize(httplib2.Http())
+                self.creds.refresh(http)
+                self.client = gspread.authorize(self.creds)
+                # print(self.creds.get_access_token())
+                time.sleep(500)
             except Exception as e:
-                self.sendMsg(self.fetch_error, msg='sheet update error: '+ str(e))
-         
+                pass         
     def all_key(self):
         """
         get all key of key-answer onto array
@@ -123,7 +133,7 @@ class Bot:
         sheet_order = self.client.open('Order cơm trưa').sheet1
         s = {}  # dictionary of other order
         p = {}  # dictionary of rice order
-        for dic in sheet_order.get_all_records()[1:]:
+        for dic in sheet_order.get_all_records():
             if dic['Món khác'] != '':
                 if dic['Món khác'] in s:
                     s[dic['Món khác']] += dic['Tên'] + ', '
@@ -145,9 +155,6 @@ class Bot:
         self.sendMsg(self.fetch_group, msg=msg, rich=True, typing=False)
 
     def list_dish(self):
-        self.creds = ServiceAccountCredentials.from_json_keyfile_name(
-            'fetch_sheet.json', self.scope)
-        self.client = gspread.authorize(self.creds)
         sheet_menu = self.client.open('menu')
         worksheet = sheet_menu.get_worksheet(0)
         rice = {}
@@ -351,7 +358,7 @@ class Bot:
                             if msg.chat.id == self.fetch_id:
                                 if content != None:
                                     # kiểm tra xem có mark @Fetch_admin không
-                                    print(content)
+                                    # print(content)
                                     if content.startswith('-admin'):
                                         # cut take msg
                                         mess = content[len(
@@ -375,12 +382,15 @@ class Bot:
                                                 self.fetch_group.sendMsg(
                                                     dic['answer'], rich=True)
                                         if mess.find('-help') >= 0:
-                                            msg = 'dưới đây là những option: \n'
-                                            for key in self.all_key()[0:]:
-                                                msg += str(self.all_key().index(key) +
-                                                           1) + ". " + key + "\n"
-                                            self.sendMsg(
-                                                self.fetch_group, msg=msg, rich=True, typing=True)
+                                            # msg = 'dưới đây là những option: \n'
+                                            # for key in self.all_key()[0:]:
+                                            #     msg += str(self.all_key().index(key) +
+                                            #                1) + ". " + key + "\n"
+                                            # self.sendMsg(
+                                            #     self.fetch_group, msg=msg, rich=True, typing=True)
+                                            msg = self.makeCard(title="key", body="answer", keys=self.all_key())
+                                            self.fetch_group.sendRaw(content=str(msg.html), messagetype="RichText/Media_Card")
+
                                         if mess.find('update order') >= 0:
                                             self.update_order()
                                         if mess.find('món ăn') >= 0:
