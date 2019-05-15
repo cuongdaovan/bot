@@ -19,9 +19,9 @@ from google.auth.transport.requests import Request
 
 class Bot:
     print('run')
-    # fetch_id = "19:6fc079db903d48babebfa404621b1457@thread.skype"  # real
+    fetch_id = "19:be91288ba7834ac69cb169ab7967f24a@thread.skype"  # real
     # fetch_id = "19:b098950b91e14699b97011b951b2b3aa@thread.skype"  # test
-    fetch_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"
+    # fetch_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"
     error_id = "19:87c093e9ad0443ba97b7f2d756ace3a5@thread.skype"  # error
     option = 1000
     scope = [
@@ -29,6 +29,7 @@ class Bot:
         'https://www.googleapis.com/auth/drive',
     ]
     def __init__(self):
+        self.sheet_order = "Order cơm trưa - Golden"
         self.fetch_admin = Skype('cuongdaovan262@gmail.com', 'developer26297@', tokenFile='.tokens')
         self.fetch_group = None
         self.fetch_error = None
@@ -73,7 +74,7 @@ class Bot:
                 s = self.client.open('HCM').sheet1
                 self.sheet = s.get_all_records()
                 self.list_dish()
-                # self.question_answer()
+                self.question_answer()
                 http = self.creds.authorize(httplib2.Http())
                 self.creds.refresh(http)
                 self.client = gspread.authorize(self.creds)
@@ -110,7 +111,7 @@ class Bot:
             users = []
             for user in self.fetch_group.users:
                 users.append(str(user.name))
-            sheet = self.client.open('Order HCM').sheet1
+            sheet = self.client.open(self.sheet_order).sheet1
             collator = icu.Collator.createInstance(icu.Locale('de_DE.UTF-8'))
             users.sort(key=collator.getSortKey)
             print(users)
@@ -129,15 +130,15 @@ class Bot:
             self.sendMsg(self.fetch_error, msg='update order error: '+e, rich=False, typing=False)
 
     def update_order(self):
-        sheet_order = self.client.open('Order HCM').sheet1
+        sheet_order = self.client.open(self.sheet_order).sheet1
         s = {}  # dictionary of other order
         p = {}  # dictionary of rice order
-        for dic in sheet_order.get_all_records()[1:]:
-            if dic['Món khác'] != '':
-                if dic['Món khác'] in s:
-                    s[dic['Món khác']] += dic['Tên'] + ', '
+        for dic in sheet_order.get_all_records():
+            if dic['Món'] != '':
+                if dic['Món'] in s:
+                    s[dic['Món']] += dic['Tên'] + ', '
                 else:
-                    s.update({dic['Món khác']: dic['Tên'] + ', '})
+                    s.update({dic['Món']: dic['Tên'] + ', '})
             if dic['Cơm suất'] != '':
                 if dic['Cơm suất'] in p:
                     p[dic['Cơm suất']] += dic['Tên'] + ', '
@@ -149,7 +150,7 @@ class Bot:
         for key in p:
             msg += str(key) + ': ' + str(p[key]) + '\n'
         for dic in self.sheet:
-            if dic['key'].find('link order') >= 0:
+            if dic['key'].find('remind') >= 0:
                 msg += dic['answer']
         self.sendMsg(self.fetch_group, msg=msg, rich=True, typing=False)
 
@@ -178,7 +179,7 @@ class Bot:
         error = 'order sai\nmuốn order cơm: -order món thịt, món rau\nmuốn order món khác: -order tên món'
         if msg.lower().find(',') >= 0:
             check = True
-            sheet_order = self.client.open('Order HCM').sheet1
+            sheet_order = self.client.open(self.sheet_order).sheet1
             try:
                 ms = msg[len('-order'):]
                 order_rice = ms.split(',')
@@ -240,15 +241,13 @@ class Bot:
                 print(other)
                 print(note)
                 if other != '':
-                    sheet_order = self.client.open('Order HCM').sheet1
+                    sheet_order = self.client.open(self.sheet_order).sheet1
                     cell = sheet_order.find(str(user.name))
                     sheet_order.update_acell('C'+str(cell.row), '')
-                    sheet_order.update_acell('D'+str(cell.row), '')
-                    sheet_order.update_acell('E'+str(cell.row), '')
-                    sheet_order.update_acell('F'+str(cell.row), other)
-                    sheet_order.update_acell('G'+str(cell.row), self.list_order['other'][other])
-                    sheet_order.update_acell('H'+str(cell.row), 'Chưa thanh toán')
-                    sheet_order.update_acell('I'+str(cell.row), note)
+                    sheet_order.update_acell('D'+str(cell.row), other)
+                    sheet_order.update_acell('F'+str(cell.row), self.list_order['other'][other])
+                    sheet_order.update_acell('E'+str(cell.row), 'Chưa thanh toán')
+                    sheet_order.update_acell('G'+str(cell.row), note)
                     self.sendMsg(self.fetch_group,msg='(like)(like)(like)(like)(like)', rich=False, typing=True)
                 else:
                     ch = self.fetch_admin.contacts[user.id].chat
@@ -275,7 +274,7 @@ class Bot:
                 now = datetime.now()
                 days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
                 if now.strftime("%A").lower() in days:
-                    if self.check_time(datetime.now().strftime("%H:%M"), "16:05"):
+                    if self.check_time(datetime.now().strftime("%H:%M"), "09:00"):
                         msg = 'chúc <at id="*">all</at> một ngày làm việc vui vẻ và hiệu quả\n'
                         msg += "xem các option: -admin -help"
                         self.sendMsg(self.fetch_group, msg=msg,
@@ -283,7 +282,7 @@ class Bot:
                         time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "09:15"):
                         for dic in self.sheet:
-                            if dic['key'].find('đặt cơm') >= 0:
+                            if dic['key'].find('gửi menu') >= 0:
                                 self.sendMsg(
                                     self.fetch_group, msg=dic['answer'], rich=True, typing=True)
                         time.sleep(60)
@@ -299,16 +298,16 @@ class Bot:
                                      rich=False, typing=True)
                         time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "17:00"):
-                        worksheet = self.client.open('Order HCM').sheet1
-                        cell_list = worksheet.range('C3:F200')
+                        worksheet = self.client.open(self.sheet_order).sheet1
+                        cell_list = worksheet.range('C3:G200')
                         for cell in cell_list:
                             cell.value = ''
                         worksheet.update_cells(cell_list)
                         self.updateSheetOrder()
                         time.sleep(60)
                     if self.check_time(datetime.now().strftime("%H:%M"), "09:10"):
-                        worksheet = self.client.open('Order HCM').sheet1
-                        cell_list = worksheet.range('C3:F200')
+                        worksheet = self.client.open(self.sheet_order).sheet1
+                        cell_list = worksheet.range('C3:G200')
                         for cell in cell_list:
                             cell.value = ''
                         worksheet.update_cells(cell_list)
